@@ -4,7 +4,7 @@ module "eks" {
   cluster_name = local.cluster_name
   cluster_version = "1.21"
   subnet_ids = module.vpc.private_subnets
-  iam_role_permissions_boundary = "arn:aws:iam::883940313665:policy/BoundaryForAdministratorAccess"
+  iam_role_permissions_boundary = "arn:aws:iam::${account_id}:policy/BoundaryForAdministratorAccess"
 
   vpc_id = module.vpc.vpc_id
   tags = {
@@ -31,7 +31,7 @@ module "eks" {
         cstag-business = "Sales"
         Purpose = "PreSales Demos"
       }
-      iam_role_permissions_boundary = "arn:aws:iam::883940313665:policy/BoundaryForAdministratorAccess"
+      iam_role_permissions_boundary = "arn:aws:iam::${account_id}:policy/BoundaryForAdministratorAccess"
       min_size = 1
       max_size = 3
       desired_size = 1
@@ -42,11 +42,18 @@ module "eks" {
   }
   aws_auth_users = [
     {
-      userarn  = "arn:aws:iam::883940313665:user/wus-cloudshare"
+      userarn  = "arn:aws:iam::${account_id}:user/wus-cloudshare"
       username = "wus-cloudshare"
       groups   = ["system:masters"]
     }
   ]
+}
+
+data "aws_caller_identity" "current" {}
+
+
+locals {
+    account_id = data.aws_caller_identity.current.account_id
 }
 
 data "aws_eks_cluster" "cluster" {
