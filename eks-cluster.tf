@@ -40,6 +40,8 @@ module "eks" {
         "t3.large"]
     }
   }
+
+
   aws_auth_users = [
     {
       userarn  = "arn:aws:iam::${local.account_id}:user/wus-cloudshare"
@@ -49,6 +51,24 @@ module "eks" {
   ]
 }
 
+provider "helm" {
+  kubernetes {
+    host                   = module.eks.helmconfig.host
+    token                  = module.eks.helmconfig.token
+    cluster_ca_certificate = base64decode(module.eks.helmconfig.ca)
+  }
+}
+
+module "lb-controller" {
+  source       = "../../modules/lb-controller"
+  cluster_name = local.cluster_name
+  oidc         = module.eks.oidc
+  helm = {
+    vars = module.eks.features.fargate_enabled ? {
+      vpcId = module.vpc.vpc_id
+    } : {}
+  }
+}
 data "aws_caller_identity" "current" {}
 
 
