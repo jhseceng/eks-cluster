@@ -1,31 +1,51 @@
 module "eks" {
-  source          = "terraform-aws-modules/eks/aws"
-  version         = "17.24.0"
-  cluster_name    = local.cluster_name
-  cluster_version = "1.20"
-  subnets         = module.vpc.private_subnets
+  source = "terraform-aws-modules/eks/aws"
+  version = "18.20.5"
+  cluster_name = local.cluster_name
+  cluster_version = "1.21"
+  subnet_ids = module.vpc.private_subnets
+  iam_role_permissions_boundary = "arn:aws:iam::883940313665:policy/BoundaryForAdministratorAccess"
 
   vpc_id = module.vpc.vpc_id
+  tags = {
+        cstag-department = "Sales - 310000"
+        cstag-owner = "jaime.franklin"
+        cstag-accounting = "dev"
+        cstag-business = "Sales"
+        Purpose = "PreSales Demos"
+      }
 
-  workers_group_defaults = {
-    root_volume_type = "gp2"
+  # EKS Managed Node Group(s)
+  eks_managed_node_group_defaults = {
+    disk_size = 50
+    instance_types = [
+      "t3.large"]
   }
 
-  worker_groups = [
+  eks_managed_node_groups = {
+    green = {
+      tags = {
+        cstag-department = "Sales - 310000"
+        cstag-owner = "jaime.franklin"
+        cstag-accounting = "dev"
+        cstag-business = "Sales"
+        Purpose = "PreSales Demos"
+      }
+      iam_role_permissions_boundary = "arn:aws:iam::883940313665:policy/BoundaryForAdministratorAccess"
+      min_size = 1
+      max_size = 3
+      desired_size = 1
+
+      instance_types = [
+        "t3.large"]
+    }
+  }
+  aws_auth_users = [
     {
-      name                          = "worker-group-1"
-      instance_type                 = "t2.small"
-      additional_userdata           = "echo foo bar"
-      additional_security_group_ids = [aws_security_group.worker_group_mgmt_one.id]
-      asg_desired_capacity          = 2
-    },
-    {
-      name                          = "worker-group-2"
-      instance_type                 = "t2.medium"
-      additional_userdata           = "echo foo bar"
-      additional_security_group_ids = [aws_security_group.worker_group_mgmt_two.id]
-      asg_desired_capacity          = 1
-    },
+      userarn  = "arn:aws:iam::883940313665:user/wus-cloudshare"
+      username = "wus-cloudshare"
+      groups   = ["system:masters"]
+    }
   ]
 }
 
